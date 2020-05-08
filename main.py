@@ -13,6 +13,24 @@ class PKUVideo:
         self.session=requests.session()
         self.setHeaders()
 
+        print("""
+        ——————————————————————————————————————————————————————————————
+        ------              --- ------              ---    ---
+        -     --            --- ---                 ---    ---
+        -     ---           -----                   ---    ---
+        -     --            -----                   ---    ---
+        ------              -------                 ---    ---
+        --                  --- ----                ---    ---
+        --                  --- ------              ---    ---
+        --                  --- --------              ------
+        --                  ---
+        author：Losenine
+        data：2020-05-08
+        vx:Charleval
+        ——————————————————————————————————————————————————————————————
+        start running...
+        """)
+
 
     def setHeaders(self):
         headers={
@@ -166,6 +184,14 @@ class PKUVideo:
             turl=rurl+'/'+t
             print('downloading:'+turl)
             self.downloadts(turl,textPath)
+
+        print('正在删除m3u8')
+        #删除m3u8
+        try:
+            if os.path.exists(textPath+'.m3u8'):
+                os.remove(textPath+'.m3u8')
+        except:
+            print('删除m3u8失败')
 
 
 
