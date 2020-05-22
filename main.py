@@ -1,14 +1,15 @@
 import requests
 from urllib.parse import quote
 import os
-import random
+import random,time
 import threading
 import configparser
 
 class PKUVideo:
-    def __init__(self,u,p):
+    def __init__(self,u,p,c):
         self.username=u
         self.password=p
+        self.cookies=c
 
         self.session=requests.session()
         self.setHeaders()
@@ -34,8 +35,9 @@ class PKUVideo:
 
     def setHeaders(self):
         headers={
-            'Referer':'https://portal.pku.edu.cn/portal2017/login.jsp',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763'
+            'Connection': 'keep-alive',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
         }
         self.session.headers=headers
 
@@ -46,8 +48,11 @@ class PKUVideo:
             'appName': quote('北京大学校内信息门户新版'),
             'redirectUrl': 'https://portal.pku.edu.cn/portal2017/ssoLogin.do'
         }
+        self.session.cookies['userName']=self.username
+        self.session.cookies['remember']='true'
         html=self.session.get(url,params=params)
         if html.status_code==200:
+
             self.doLogin()
         else:
             print('获取登录页失败！')
@@ -64,7 +69,6 @@ class PKUVideo:
             'redirUrl': 'https://portal.pku.edu.cn/portal2017/ssoLogin.do'
         }
         html=self.session.post(url,data)
-        #print(html.text)
         if 'success' in html.text:
             token=html.json()['token']
             print('[SUCCESS]token:',token)
@@ -75,20 +79,32 @@ class PKUVideo:
     def stuAllpage(self,token):
         url='https://portal.pku.edu.cn/portal2017/ssoLogin.do'
         params={
-            '_rand': random.random(),
+            '_rand': time.time()/10000000000,
             'token': token
         }
         html=self.session.get(url,params=params)
-        #print(html.text)
+
+        html=self.session.get('https://portal.pku.edu.cn/portal2017/#/bizCenter?rand={}'.format(random.random()))
+
+        html=self.session.post('https://portal.pku.edu.cn/portal2017/isUserLogged.do')
+
+        url='https://portal.pku.edu.cn/portal2017/account/insertUserLog.do?portletId=liveclass&portletName=%E5%8C%97%E5%A4%A7%E7%9B%B4%E6%92%AD%E8%AF%BE%E5%A0%82'
+        html=self.session.post(url)
+        # print(html.text)
         self.getCourses()
 
 
     def getCourses(self):
         #获取所有课程数据
-        url='https://portal.pku.edu.cn/portal2017/util/appSysRedir.do?appId=liveclass'
-        self.session.get(url)
+        url='http://liveclass.pku.edu.cn/course/'
+
+        self.session.headers['Cookie']=self.cookies
+        print(self.session.headers)
+        html=self.session.get(url)
+        print(html.text)
 
         url='http://liveclass.pku.edu.cn/course/ctrl/course/retrCourses.do'
+
         json_data=self.session.post(url)
         if json_data.status_code==200:
             myClasses=json_data.json()['myCourses']
@@ -226,10 +242,10 @@ def getConfig():
     #print(sections)
 
     items = conf.items('studentInfo')
-    return items[0][1],items[1][1]
+    return items[0][1],items[1][1],items[2][1]
 
 if __name__ == '__main__':
-    u,p=getConfig()
+    u,p,c=getConfig()
 
-    pku=PKUVideo(u,p)
+    pku=PKUVideo(u,p,c)
     pku.run()
